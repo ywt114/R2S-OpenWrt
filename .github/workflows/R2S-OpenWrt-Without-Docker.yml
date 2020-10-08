@@ -3,8 +3,8 @@ name: R2S-OpenWrt-Without-Docker
 on:
   #schedule:
   #  - cron: 5 9 * * *
-  watch:
-    types: started
+  #watch:
+  #  types: started
 
 jobs:
   build:
