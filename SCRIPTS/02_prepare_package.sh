@@ -2,14 +2,14 @@
 clear
 
 #blocktrron.git 
-#patch -p1 < ../PATCH/new/main/exp/rockchip-fix-NanoPi-R2S-PHY-ID.patch
-#patch -p1 < ../PATCH/new/main/exp/Revert-uboot-rockchip-update-NanoPi-R2S-patches.patch
-#patch -p1 < ../PATCH/new/main/exp/rockchip-enable-Realtek-PHY-support.patch
+patch -p1 < ../PATCH/new/main/exp/uboot-rockchip-update-to-v2020.10-rc5.patch
+patch -p1 < ../PATCH/new/main/exp/rockchip-fix-NanoPi-R2S-GMAC-clock-name.patch
+
+#update r8152 driver
+#wget -O- https://patch-diff.githubusercontent.com/raw/openwrt/openwrt/pull/3178.patch | patch -p1
 
 #Kernel
 #cp -f ../PATCH/new/main/xanmod_5.4.patch ./target/linux/generic/hack-5.4/000-xanmod_5.4.patch
-wget -O- https://patch-diff.githubusercontent.com/raw/openwrt/openwrt/pull/3178.patch | patch -p1
-#wget -O- https://patch-diff.githubusercontent.com/raw/openwrt/openwrt/pull/3389.patch | patch -p1
 
 notExce(){ 
 #RT Kernel
@@ -55,13 +55,12 @@ sed -i 's/O2/O2/g' ./rules.mk
 sed -i 's/-f/-f -i/g' feeds/packages/utils/rng-tools/files/rngd.init
 
 ##必要的patch
-#等待上游修复后使用
 #fix sd
-#cp -f ../PATCH/new/main/997-nanopi-r2s-improve-boot-failed.patch ./package/boot/uboot-rockchip/patches/997-nanopi-r2s-improve-boot-failed.patch
+#cp -f ../PATCH/new/main/101-rockchip-rk3328-nanopi-r2s-improve-boot-failed.patch ./package/boot/uboot-rockchip/patches/101-rockchip-rk3328-nanopi-r2s-improve-boot-failed.patch
 #patch i2c0
 cp -f ../PATCH/new/main/998-rockchip-enable-i2c0-on-NanoPi-R2S.patch ./target/linux/rockchip/patches-5.4/998-rockchip-enable-i2c0-on-NanoPi-R2S.patch
 #patch rk-crypto
-patch -p1 < ../PATCH/new/main/kernel_crypto-add-rk3328-crypto-support.patch
+#patch -p1 < ../PATCH/new/main/kernel_crypto-add-rk3328-crypto-support.patch
 #luci network
 patch -p1 < ../PATCH/new/main/luci_network-add-packet-steering.patch
 #patch jsonc
@@ -89,8 +88,8 @@ patch -p1 < ../PATCH/new/package/luci-app-firewall_add_sfe_switch.patch
 # SFE内核补丁
 pushd target/linux/generic/hack-5.4
 #wget https://raw.githubusercontent.com/MeIsReallyBa/Openwrt-sfe-flowoffload-linux-5.4/master/999-shortcut-fe-support.patch
-wget https://raw.githubusercontent.com/Lienol/openwrt/dev-master/target/linux/generic/hack-5.4/999-01-shortcut-fe-support.patch
-#wget https://raw.githubusercontent.com/coolsnowwolf/lede/master/target/linux/generic/hack-5.4/999-shortcut-fe-support.patch
+#wget https://raw.githubusercontent.com/Lienol/openwrt/dev-master/target/linux/generic/hack-5.4/999-01-shortcut-fe-support.patch
+wget https://raw.githubusercontent.com/coolsnowwolf/lede/master/target/linux/generic/hack-5.4/999-shortcut-fe-support.patch
 popd
 #OC
 cp -f ../PATCH/new/main/999-unlock-1608mhz-rk3328.patch ./target/linux/rockchip/patches-5.4/999-unlock-1608mhz-rk3328.patch
@@ -104,6 +103,14 @@ sed -i 's,"eth1" "eth0","eth0" "eth1",g' target/linux/rockchip/armv8/base-files/
 sed -i "s,'eth1' 'eth0','eth0' 'eth1',g" target/linux/rockchip/armv8/base-files/etc/board.d/02_network
 
 ##获取额外package
+#luci-app-compressed-memory
+wget -O- https://github.com/openwrt/openwrt/compare/3f5cf3...NoTengoBattery:master.patch | patch -p1
+mkdir ./package/new
+cp -rf ../NoTengoBattery/feeds/luci/applications/luci-app-compressed-memory ./package/new/luci-app-compressed-memory
+sed -i 's,include ../..,include $(TOPDIR)/feeds/luci,g' ./package/new/luci-app-compressed-memory/Makefile
+#更换cryptodev-linux
+rm -rf ./package/kernel/cryptodev-linux
+svn co https://github.com/project-openwrt/openwrt/trunk/package/kernel/cryptodev-linux package/kernel/cryptodev-linux
 #更换curl
 rm -rf ./package/network/utils/curl
 svn co https://github.com/openwrt/packages/trunk/net/curl package/network/utils/curl
@@ -334,6 +341,9 @@ CONFIG_CRYPTO_SIMD=y
 # CONFIG_CRYPTO_SM3_ARM64_CE is not set
 # CONFIG_CRYPTO_SM4_ARM64_CE is not set
 ' >> ./target/linux/rockchip/armv8/config-5.4
+
+#let trojan prefer chacha20(vssr,passwall,ssrp
+patch -p1 < ../PATCH/new/main/chacha.patch
 
 #disable-rk3328-eth-offloading
 #wget -P target/linux/rockchip/armv8/base-files/etc/hotplug.d/iface https://raw.githubusercontent.com/friendlyarm/friendlywrt/master-v19.07.1/target/linux/rockchip-rk3328/base-files/etc/hotplug.d/iface/12-disable-rk3328-eth-offloading
